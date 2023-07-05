@@ -3,21 +3,28 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+#from mpl_toolkits.mplot3d import Axes3D
 import datetime as dt
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.figure_factory as ff
 
+#Импорт набора данных
 df = pd.read_csv("powerconsumption.csv")
 
+#Просмотр верхней части данных
 df.head()
 
+#Просмотр нижней части данных
 df.tail()
 
+#Просмотр верхней и нижней части данных
 df
 
+#Просмотр состава набора данных
 df.shape
 
+#Просмотр типа данных и проверка на нулевые значения
 df.info()
 
 df['Datetime'] = pd.to_datetime(df['Datetime'])
@@ -27,25 +34,33 @@ df
 
 df.info()
 
+#Проверка на пропущенные значения
 df.isnull().sum()
 
+#Проверка на дубликаты в данных
 df.duplicated().sum()
 
+#Просмотр описательной статистики в наборе данных
 df.describe()
 
+#Создание нового столбца в наборе данных
 total_power = df[['PowerConsumption_Zone1', 'PowerConsumption_Zone2', 'PowerConsumption_Zone3']]
 df['Total_Power_Sum'] = total_power.sum(axis=1)
 df["Month"] = df["Datetime"].dt.month
 df
 
+#Просмотр описательной статистики в наборе данных с округлением до 2х знаков после запятой
 df.describe().round(2)
 
+#Установка индекса на столбец Datetime
 df = df.set_index(df["Datetime"])
 df
 
+#Группировка данных по месяцам для более простого и эффективного построения трендов.
 grouped = df.groupby('Month').mean(numeric_only=True)
 grouped
 
+#Общая влажность
 fig = px.line(df,
               x="Datetime",
               y="Humidity",
@@ -53,6 +68,7 @@ fig = px.line(df,
               title = "Общая влажность за год")
 fig.show()
 
+#Общая мощность выработанная за год
 fig = px.line(df,
               x="Datetime",
               y="Total_Power_Sum",
@@ -68,6 +84,7 @@ fig.update_layout(
 )
 fig.show()
 
+#Выработка энергии(месячная статистика)
 fig = px.box(df,
         x=df.index.month,
         y="Total_Power_Sum",
@@ -105,6 +122,7 @@ fig.update_traces(width=0.6)
 fig.update_layout(barmode='group', xaxis_tickangle=-45)
 fig.show()
 
+#Средняя температура  в месяц
 fig = px.bar(grouped,
               x=grouped.index,
               y="Temperature",
@@ -125,6 +143,7 @@ fig = px.box(df,
              title="Общая статистика скорости ветра")
 fig.show()
 
+#Делаем корреляцию
 df_corr = df.corr()
 df_corr
 

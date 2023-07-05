@@ -10,15 +10,16 @@ import plotly.figure_factory as ff
 
 df.info()
 
+#Разделяем датасет на 2 датафрейма
 df = pd.read_csv("powerconsumption.csv")
 total_power = df[['PowerConsumption_Zone1', 'PowerConsumption_Zone2', 'PowerConsumption_Zone3']]
 df['Total_Power_Sum'] = total_power.sum(axis=1)
 df['Datetime'] = pd.to_datetime(df['Datetime'])
 df['Datetime'] = pd.to_datetime(df['Datetime'], errors='coerce')
 df["Month"] = df["Datetime"].dt.month
-df_1_to_11 = df[df['Month'].isin(range(1, 12))]
-df_12 = df[df['Month'] == 12]
-df_1_to_11.to_csv("1to11.csv", index=False)
+df_1_to_11 = df[df['Month'].isin(range(1, 12))]# Выбрать строки с месяцами от 1 до 11
+df_12 = df[df['Month'] == 12]# Выберать строки с месяцем 12
+df_1_to_11.to_csv("1to11.csv", index=False)#Распечатайте первые 5 строк каждого фрейма данных
 df_12.to_csv("to12.csv", index=False)
 print(df_1_to_11.head())
 print(df_12.head())
@@ -34,12 +35,14 @@ df_1_to_11 = df_1_to_11.drop('Datetime', axis = 1)
 df_1_to_11 = df_1_to_11.drop('PowerConsumption_Zone1', axis = 1)
 df_1_to_11 = df_1_to_11.drop('PowerConsumption_Zone2', axis = 1)
 df_1_to_11 = df_1_to_11.drop('PowerConsumption_Zone3', axis = 1)
-train_df, test_df = train_test_split(df_1_to_11, test_size=0.2, random_state=42)
+train_df, test_df = train_test_split(df_1_to_11, test_size=0.2, random_state=42)# Разделяем датасет на обучение и тестовые сеты
+#Преобразуйте данные обучения и тестирования в 3д массив для ввода LSTM.
 X_train = train_df.drop("Total_Power_Sum", axis=1).values.reshape(-1, 1, 6)
 X_test = test_df.drop("Total_Power_Sum", axis=1).values.reshape(-1, 1, 6)
 y_train = train_df["Total_Power_Sum"].values.reshape(-1, 1)
 y_test = test_df["Total_Power_Sum"].values.reshape(-1, 1)
 
+#Создаем LSTM модель
 model=Sequential()
 model.add(LSTM(256,return_sequences=True,input_shape=(1, 6)))
 model.add(LSTM(128,return_sequences=True))
@@ -48,6 +51,7 @@ model.add(Dense(1))
 model.compile(loss='mean_squared_error',optimizer='adam')
 model.summary()
 
+#Создаем LSTM модель
 model = Sequential()
 model.add(LSTM(32, input_shape=(1, 6)))
 model.add(Dense(64, activation='relu'))
@@ -55,18 +59,21 @@ model.add(Dense(1, activation='linear'))
 model.compile(loss='mean_squared_error', optimizer='adam')
 model.summary()
 
+#Обучаем модель LSTM
 model.fit(X_train, y_train, epochs=20, verbose=1)
 
+#Убираем ненужные нам пункты
 preds = model.predict(X_test)
 df_12 = df_12.drop('Datetime', axis = 1)
 df_12 = df_12.drop('PowerConsumption_Zone1', axis = 1)
 df_12 = df_12.drop('PowerConsumption_Zone2', axis = 1)
 df_12 = df_12.drop('PowerConsumption_Zone3', axis = 1)
 
+
 next_24_hours_X = df_12[["Temperature", "Humidity", "WindSpeed","GeneralDiffuseFlows","DiffuseFlows", "Month"]].values.reshape(-1, 1, 6)
-next_24_hours_preds = model.predict(next_24_hours_X)
-df_12["Total_Power_Sum"] = next_24_hours_preds.flatten()
-df_12.to_csv("PredictData.csv", index=False)
+next_24_hours_preds = model.predict(next_24_hours_X)#Делайте прогнозы, используя модель
+df_12["Total_Power_Sum"] = next_24_hours_preds.flatten()# Добавляем прогнозируемые значения в исходный датафрейм
+df_12.to_csv("PredictData.csv", index=False)# Запишите обновленные данные в тот же файл Excel
 
 data = pd.read_csv("to12.csv")
 datapredict = pd.read_csv("PredictData.csv")
